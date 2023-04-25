@@ -1,14 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-  <?php 
-  include ("register.html");
-  ?>
-</body>
-</html>
+<!--  ('1', 'Sample test', 'sample@sample.com', 'sample123'); -->
+
+<?php
+$mysqli = require __DIR__ . "/database.php";
+
+if (empty($_POST["username"])) {
+    die("Username is required");
+}
+
+if (!filter_var($_POST["email"], FILTER_VALIDATE_EMAIL)) {
+    die("Email is not valid");
+}
+
+if (strlen($_POST["pwd"]) < 8) {
+    die("Password must be at least 8 characters long");
+}
+
+if ($_POST["pwd"] !== $_POST["Cpwd"]) {
+    die("Passwords do not match");
+}
+
+$password_hash = password_hash($_POST["pwd"], PASSWORD_DEFAULT);
+
+$sql = "INSERT INTO `user_data` (`id`, `username`, `email`, `password`) VALUES (?,?,?)";
+$stmt = $mysqli->stmt_init();
+if (!$stmt->prepare($sql)) {
+    die("SQL error: " . $mysqli->error);
+}
+
+$stmt->bind_param("sss", $_POST["username"], $_POST["email"], $password_hash);
+if ($stmt->execute()) {
+   header("Location: ../login.html");
+   exit;
+} else {
+    if ($mysqli->errno === 1062) {
+        die("Email id already exists");
+    } else {
+        die($mysqli->error . " " . $mysqli->errno);
+    }
+}
